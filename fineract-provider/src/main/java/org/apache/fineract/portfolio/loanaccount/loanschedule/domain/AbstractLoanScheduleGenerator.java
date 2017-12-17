@@ -516,7 +516,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                                         currentPeriodParams.getPrincipalForThisPeriod().minus(principalProcessed)),
                                 scheduleParams.getPeriodNumber() + 1, mc));
                         if (loanApplicationTerms.getAmortizationMethod().isEqualInstallment()
-                                && fixedEmiAmount.compareTo(loanApplicationTerms.getFixedEmiAmount()) != 0) {
+                                && (!(fixedEmiAmount == null) && fixedEmiAmount.compareTo(loanApplicationTerms.getFixedEmiAmount()) != 0)) {
                             currentPeriodParams.setEmiAmountChanged(true);
                         }
 
