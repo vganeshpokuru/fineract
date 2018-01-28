@@ -32,7 +32,7 @@ public class EndOfDayBalance {
     private final LocalDate date;
     private final Money openingBalance;
     private final Money endOfDayBalance;
-    private final int numberOfDays;
+    private int numberOfDays;
 
     public static EndOfDayBalance from(final LocalDate date, final Money openingBalance, final Money endOfDayBalance,
             final int numberOfDays) {
@@ -104,6 +104,7 @@ public class EndOfDayBalance {
         switch (compoundingInterestPeriodType) {
             case NO_COMPOUNDING:
                 presentValue = this.endOfDayBalance.getAmount();
+                this.numberOfDays = 30;
             break;
 
             default:
@@ -116,13 +117,27 @@ public class EndOfDayBalance {
         if(presentValue.compareTo(BigDecimal.ZERO) >= 0){
             if (presentValue.compareTo(minBalanceForInterestCalculation) >= 0) {
                 final BigDecimal r = interestRateAsFraction.multiply(multiplicand);
+                
+                 double interestRateForCompoundingPeriodPowered;
+                
+                switch (compoundingInterestPeriodType) {
 
+                case NO_COMPOUNDING:
+                	interestRateForCompoundingPeriodPowered = r.multiply(new BigDecimal(this.numberOfDays)).doubleValue();
+                	futureValue = presentValue.multiply(BigDecimal.valueOf(interestRateForCompoundingPeriodPowered), MathContext.DECIMAL64)
+                            .setScale(9, MoneyHelper.getRoundingMode());
+                	futureValue = presentValue.add(futureValue);
+                	break;
+                	
+                default:	
                 final BigDecimal interestRateForCompoundingPeriodPlusOne = BigDecimal.ONE.add(r);
 
-                final double interestRateForCompoundingPeriodPowered = Math.pow(interestRateForCompoundingPeriodPlusOne.doubleValue(),
+                interestRateForCompoundingPeriodPowered = Math.pow(interestRateForCompoundingPeriodPlusOne.doubleValue(),
                         Integer.valueOf(this.numberOfDays).doubleValue());
                 futureValue = presentValue.multiply(BigDecimal.valueOf(interestRateForCompoundingPeriodPowered), MathContext.DECIMAL64)
                         .setScale(9, MoneyHelper.getRoundingMode());
+                break;
+                }
             }
         }else{
             if (presentValue.compareTo(minOverdraftForInterestCalculation.negate()) < 0) {

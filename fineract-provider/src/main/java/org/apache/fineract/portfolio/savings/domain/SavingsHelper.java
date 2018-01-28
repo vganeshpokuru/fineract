@@ -116,7 +116,7 @@ public final class SavingsHelper {
             break;
             case MONTHLY:
                 // produce period end date on last day of current month
-                periodEndDate = periodStartDate.dayOfMonth().withMaximumValue();
+                periodEndDate = periodStartDate.plusMonths(1);
             break;
             case QUATERLY:
                 for (LocalDate quarterlyDate : quarterlyDates) {
@@ -151,7 +151,7 @@ public final class SavingsHelper {
             break;
         }   
         // interest posting always occurs on next day after the period end date.
-        periodEndDate = periodEndDate.plusDays(1);       
+        // periodEndDate = periodEndDate.plusDays(1);       
         return periodEndDate;
     }
 
