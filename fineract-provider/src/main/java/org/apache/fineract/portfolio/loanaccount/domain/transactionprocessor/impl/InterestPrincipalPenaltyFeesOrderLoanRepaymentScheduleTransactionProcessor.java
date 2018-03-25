@@ -164,4 +164,10 @@ public class InterestPrincipalPenaltyFeesOrderLoanRepaymentScheduleTransactionPr
         }
         return transactionAmountRemaining;
     }
+
+    @Override
+    public boolean isFullPeriodInterestToBeCollectedForLatePaymentsAfterLastInstallment() {
+        // TODO Auto-generated method stub
+        return false;
+    }
 }

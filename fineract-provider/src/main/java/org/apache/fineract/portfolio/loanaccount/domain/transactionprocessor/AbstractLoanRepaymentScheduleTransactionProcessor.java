@@ -712,5 +712,8 @@ public abstract class AbstractLoanRepaymentScheduleTransactionProcessor implemen
             }
         }
     }
+    
+    @Override
+    public abstract boolean isFullPeriodInterestToBeCollectedForLatePaymentsAfterLastInstallment();
 
 }

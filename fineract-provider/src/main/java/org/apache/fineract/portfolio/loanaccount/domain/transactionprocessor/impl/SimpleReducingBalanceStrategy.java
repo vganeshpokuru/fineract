@@ -1,20 +1,7 @@
 /**
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements. See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License. You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 package org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor.impl;
 
@@ -30,12 +17,12 @@ import org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor.Loa
 import org.joda.time.LocalDate;
 
 /**
- * Adhikar/RBI style {@link LoanRepaymentScheduleTransactionProcessor}.
+ * OverDueAndDuePenaltiesFeeInterestPrincipal style
+ * {@link LoanRepaymentScheduleTransactionProcessor}.
  * 
- * From https://mifosforge.jira.com/browse/MIFOS-5636:
- * 
- * Per RBI regulations, all interest must be paid (both current and overdue)
- * before principal is paid.
+ * Per OverDueAndDuePenaltiesFeeInterestPrincipal regulations, all interest must
+ * be paid (both current and overdue as on monthly bases) before principal is
+ * paid.
  * 
  * For example on a loan with two installments due (one current and one overdue)
  * of 220 each (200 principal + 20 interest):
@@ -43,7 +30,8 @@ import org.joda.time.LocalDate;
  * Partial Payment of 40 20 Payment to interest on Installment #1 (200 principal
  * remaining) 20 Payment to interest on Installment #2 (200 principal remaining)
  */
-public class RBILoanRepaymentScheduleTransactionProcessor extends AbstractLoanRepaymentScheduleTransactionProcessor {
+public class SimpleReducingBalanceStrategy extends
+        AbstractLoanRepaymentScheduleTransactionProcessor {
 
     /**
      * For creocore, early is defined as any date before the installment due
@@ -66,8 +54,7 @@ public class RBILoanRepaymentScheduleTransactionProcessor extends AbstractLoanRe
     @Override
     protected Money handleTransactionThatIsPaymentInAdvanceOfInstallment(final LoanRepaymentScheduleInstallment currentInstallment,
             final List<LoanRepaymentScheduleInstallment> installments, final LoanTransaction loanTransaction,
-            final LocalDate transactionDate, final Money paymentInAdvance,
-            List<LoanTransactionToRepaymentScheduleMapping> transactionMappings) {
+            final LocalDate transactionDate, final Money paymentInAdvance, final List<LoanTransactionToRepaymentScheduleMapping> transactionMappings) {
 
         return handleTransactionThatIsOnTimePaymentOfInstallment(currentInstallment, loanTransaction, paymentInAdvance, transactionMappings);
     }
@@ -118,18 +105,34 @@ public class RBILoanRepaymentScheduleTransactionProcessor extends AbstractLoanRe
 
             final LoanRepaymentScheduleInstallment currentInstallmentBasedOnTransactionDate = nearestInstallment(
                     loanTransaction.getTransactionDate(), installments);
-
+            // int loanTerm=loanTransaction.getLoan().getTermFrequency();//new
+            // code By Venkat
             for (final LoanRepaymentScheduleInstallment installment : installments) {
                 if ((installment.isInterestDue(currency) || installment.getFeeChargesOutstanding(currency).isGreaterThanZero() || installment
                         .getPenaltyChargesOutstanding(currency).isGreaterThanZero())
-                        && (installment.isOverdueOn(loanTransaction.getTransactionDate()) || installment.getInstallmentNumber().equals(
-                                currentInstallmentBasedOnTransactionDate.getInstallmentNumber()))) {
+                        && (installment.isTxnDateInCurrentInstallment(loanTransaction.getTransactionDate()) || installment
+                                .getInstallmentNumber().equals(currentInstallmentBasedOnTransactionDate.getInstallmentNumber()))) {
                     penaltyChargesPortion = installment.payPenaltyChargesComponent(transactionDate, transactionAmountRemaining);
                     transactionAmountRemaining = transactionAmountRemaining.minus(penaltyChargesPortion);
 
                     feeChargesPortion = installment.payFeeChargesComponent(transactionDate, transactionAmountRemaining);
                     transactionAmountRemaining = transactionAmountRemaining.minus(feeChargesPortion);
 
+                    // Money interestPortion=null;
+                    /*
+                     * //Newly added Venkat - from here if
+                     * (installment.getInstallmentNumber() >=
+                     * installments.size() &&
+                     * !(transactionDate.isBefore(installment.getDueDate()))) {
+                     * LocalDate dateForInterestCalculation =
+                     * transactionDate.dayOfMonth().withMaximumValue();
+                     * interestPortion =
+                     * installment.payInterestComponent(dateForInterestCalculation
+                     * , transactionAmountRemaining); } else { interestPortion =
+                     * installment.payInterestComponent(transactionDate,
+                     * transactionAmountRemaining); } //Newly added Venkat -
+                     * till here
+                     */// Original:
                     final Money interestPortion = installment.payInterestComponent(transactionDate, transactionAmountRemaining);
                     transactionAmountRemaining = transactionAmountRemaining.minus(interestPortion);
 
@@ -192,8 +195,7 @@ public class RBILoanRepaymentScheduleTransactionProcessor extends AbstractLoanRe
      */
     @Override
     protected Money handleTransactionThatIsOnTimePaymentOfInstallment(final LoanRepaymentScheduleInstallment currentInstallment,
-            final LoanTransaction loanTransaction, final Money transactionAmountUnprocessed,
-            final List<LoanTransactionToRepaymentScheduleMapping> transactionMappings) {
+            final LoanTransaction loanTransaction, final Money transactionAmountUnprocessed, final List<LoanTransactionToRepaymentScheduleMapping> transactionMappings) {
 
         final LocalDate transactionDate = loanTransaction.getTransactionDate();
         final MonetaryCurrency currency = transactionAmountUnprocessed.getCurrency();
@@ -255,7 +257,7 @@ public class RBILoanRepaymentScheduleTransactionProcessor extends AbstractLoanRe
 
     @Override
     public boolean isInterestFirstRepaymentScheduleTransactionProcessor() {
-        return true;
+        return false;
     }
 
     @Override
@@ -297,12 +299,13 @@ public class RBILoanRepaymentScheduleTransactionProcessor extends AbstractLoanRe
             transactionMappings.add(LoanTransactionToRepaymentScheduleMapping.createFrom(currentInstallment, principalPortion,
                     interestPortion, feeChargesPortion, penaltyChargesPortion));
         }
+
         return transactionAmountRemaining;
     }
 
     @Override
     public boolean isFullPeriodInterestToBeCollectedForLatePaymentsAfterLastInstallment() {
         // TODO Auto-generated method stub
-        return false;
+        return true;
     }
 }

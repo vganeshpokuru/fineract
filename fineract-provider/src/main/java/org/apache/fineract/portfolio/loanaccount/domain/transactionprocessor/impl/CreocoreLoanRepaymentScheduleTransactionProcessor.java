@@ -186,4 +186,10 @@ public class CreocoreLoanRepaymentScheduleTransactionProcessor extends AbstractL
         }
         return transactionAmountRemaining;
     }
+
+    @Override
+    public boolean isFullPeriodInterestToBeCollectedForLatePaymentsAfterLastInstallment() {
+        // TODO Auto-generated method stub
+        return false;
+    }
 }

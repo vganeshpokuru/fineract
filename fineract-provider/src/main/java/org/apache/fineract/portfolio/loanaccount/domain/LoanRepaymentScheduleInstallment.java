@@ -806,4 +806,9 @@ public final class LoanRepaymentScheduleInstallment extends AbstractAuditableCus
         return getPenaltyChargesPaid(currency).plus(getFeeChargesPaid(currency)).plus(getInterestPaid(currency))
                 .plus(getPrincipalCompleted(currency));
     }
+    
+    public boolean isTxnDateInCurrentInstallment (final LocalDate date)
+    {
+        return getFromDate().isBefore(date);
+}
 }

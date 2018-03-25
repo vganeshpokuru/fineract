@@ -54,5 +54,7 @@ public interface LoanRepaymentScheduleTransactionProcessor {
     
     void processTransactionsFromDerivedFields(List<LoanTransaction> transactionsPostDisbursement, MonetaryCurrency currency,
             List<LoanRepaymentScheduleInstallment> installments, Set<LoanCharge> charges);
+    
+    boolean isFullPeriodInterestToBeCollectedForLatePaymentsAfterLastInstallment();
 
 }

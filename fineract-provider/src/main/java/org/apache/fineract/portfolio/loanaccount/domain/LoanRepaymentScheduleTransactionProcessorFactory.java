@@ -26,6 +26,7 @@ import org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor.imp
 import org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor.impl.FineractStyleLoanRepaymentScheduleTransactionProcessor;
 import org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor.impl.PrincipalInterestPenaltyFeesOrderLoanRepaymentScheduleTransactionProcessor;
 import org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor.impl.RBILoanRepaymentScheduleTransactionProcessor;
+import org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor.impl.SimpleReducingBalanceStrategy;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanTransactionProcessingStrategy;
 import org.springframework.stereotype.Component;
 
@@ -65,6 +66,10 @@ public class LoanRepaymentScheduleTransactionProcessorFactory {
 
             if (transactionProcessingStrategy.isInterestPrincipalPenaltiesFeesOrderStrategy()) {
                 processor = new InterestPrincipalPenaltyFeesOrderLoanRepaymentScheduleTransactionProcessor();
+            }
+            
+            if(transactionProcessingStrategy.isSimpleReducingBalanceStrategy()){
+                processor  = new SimpleReducingBalanceStrategy();
             }
         }
 
