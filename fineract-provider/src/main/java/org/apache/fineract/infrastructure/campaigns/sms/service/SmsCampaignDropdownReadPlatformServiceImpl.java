@@ -73,7 +73,7 @@ public class SmsCampaignDropdownReadPlatformServiceImpl implements SmsCampaignDr
         Collection<SmsProviderData> smsProviderOptions = new ArrayList<>();
         String hostName = "" ;
         try {
-            Map<String, Object> hostConfig = this.smsConfigUtils.getMessageGateWayRequestURI("smsbridges", null);
+            Map<String, Object> hostConfig = this.smsConfigUtils.getMessageGateWayRequestURI("message-gateway-0.0.1/smsbridges", null);
             URI uri = (URI) hostConfig.get("uri");
             hostName = uri.getHost() ;
             HttpEntity<?> entity = (HttpEntity<?>) hostConfig.get("entity");
