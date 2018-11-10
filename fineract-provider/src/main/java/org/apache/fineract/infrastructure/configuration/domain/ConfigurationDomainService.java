@@ -86,4 +86,6 @@ public interface ConfigurationDomainService {
 
     void removeGlobalConfigurationPropertyDataFromCache(String propertyName);
     
+    boolean isBankTransferEnabled();
+    
 }

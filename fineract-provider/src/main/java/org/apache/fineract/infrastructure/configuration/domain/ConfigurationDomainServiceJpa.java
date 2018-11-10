@@ -296,4 +296,11 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
         }
         return configurations.get(key);
     }
+
+	@Override
+	public boolean isBankTransferEnabled() {
+		final String propertyName = "allow-bank-transactions";
+        final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
+        return property.isEnabled();
+	}
 }
