@@ -304,9 +304,9 @@ public class MpesaApi {
 			responseDateTime = DateUtils.getLocalDateTimeOfTenant();
 			responseString = EntityUtils.toString(respEntity);
 		}
-		String insertSql = "INSERT INTO `mpesa_request_response` (`request_date_time`, `request_for`, `request_done_by`, `response_date_time`, `response_body`, `transaction_id`, `request_body`) VALUES ('"
+		String insertSql = "INSERT INTO `mpesa_request_response` (`request_date_time`, `request_for`, `request_done_by`, `response_date_time`, `response_body`, `transaction_id`, `request_body`, `amount`, `providerID`, `narration`, `beneficiaryAccount`, `senderName`) VALUES ('"
 				+ requestDateTime + "', 'Transaction', '" + this.context.authenticatedUser().getId() + "', '"
-				+ responseDateTime + "', '" + responseString + "','"+referenceStart+nonce+"', '"+json+"');";
+				+ responseDateTime + "', '" + responseString + "','"+referenceStart+nonce+"', '"+json+"',"+amount+","+providerID+",'"+narration+"','"+beneficiaryAccount+"','"+senderName+"');";
 		this.jdbcTemplate.update(insertSql);
 		final JsonElement element = this.fromApiJsonHelper.parse(responseString);
 		final JsonObject topLevelJsonElement = element.getAsJsonObject();
