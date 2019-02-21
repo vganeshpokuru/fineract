@@ -1,0 +1,1 @@
+ALTER TABLE `f_bank_mpesa_details` CHANGE COLUMN `property_description` `property_description` VARCHAR(100) NULL DEFAULT NULL AFTER `property_name`;

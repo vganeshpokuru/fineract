@@ -6,12 +6,14 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.UUID;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -19,6 +21,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
 
+import org.apache.commons.lang.RandomStringUtils;
 import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.api.JsonQuery;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
@@ -27,6 +30,8 @@ import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.sms.MessageGatewayException;
+import org.apache.fineract.sms.SmsAfricaGateway;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
@@ -60,12 +65,14 @@ public class MpesaApi {
 	private final DefaultToApiJsonSerializer<Object> toApiJsonSerializer;
 	private final PlatformSecurityContext context;
 	private final FromJsonHelper fromApiJsonHelper;
+	private BankReadPlatfomService bankReadPlatfomService;
 
 	@Autowired
 	public MpesaApi(BankPropertyReadPlatfomService bankPropertyReadPlatfomService, FromJsonHelper fromJsonHelper,
 			final ApiRequestParameterHelper apiRequestParameterHelper,
 			final DefaultToApiJsonSerializer<Object> toApiJsonSerializer, final PlatformSecurityContext context,
-			final RoutingDataSource dataSource, final FromJsonHelper fromApiJsonfromApiJsonHelper) {
+			final RoutingDataSource dataSource, final FromJsonHelper fromApiJsonfromApiJsonHelper,
+			final BankReadPlatfomService bankReadPlatfomService) {
 		this.bankPropertyReadPlatfomService = bankPropertyReadPlatfomService;
 		this.fromJsonHelper = fromJsonHelper;
 		this.context = context;
@@ -73,21 +80,46 @@ public class MpesaApi {
 		this.toApiJsonSerializer = toApiJsonSerializer;
 		this.jdbcTemplate = new JdbcTemplate(dataSource);
 		this.fromApiJsonHelper = fromApiJsonfromApiJsonHelper;
+		this.bankReadPlatfomService = bankReadPlatfomService;
+	}
+	
+	@GET
+	@Path("/bankdetails")
+	@Consumes({ MediaType.APPLICATION_JSON })
+	@Produces({ MediaType.APPLICATION_JSON })
+	public String getBankDetails(final String apiRequestBodyAsJson, @Context final UriInfo uriInfo) {
+		Collection<BankName> BankDetails = bankReadPlatfomService.retrieveBankName();
+		final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper
+				.process(uriInfo.getQueryParameters());
+		return this.toApiJsonSerializer.serialize(settings, BankDetails, PARAMETERS);
 	}
 
 	@POST
 	@Path("/verify")
 	@Consumes({ MediaType.APPLICATION_JSON })
 	@Produces({ MediaType.APPLICATION_JSON })
-	public String verify(final String apiRequestBodyAsJson, @Context final UriInfo uriInfo) {
+	public String verify(final String apiRequestBodyAsJson, @Context final UriInfo uriInfo) throws MessageGatewayException {
 		final JsonElement parsedQuery = this.fromJsonHelper.parse(apiRequestBodyAsJson);
 		final JsonQuery query = JsonQuery.from(apiRequestBodyAsJson, parsedQuery, this.fromJsonHelper);
-		BankWalletNumberVerificationData bankWalletNumberVerificationData = new BankWalletNumberVerificationData(false);
+		BankWalletNumberVerificationDataWalletVerified bankWalletNumberVerificationData = new BankWalletNumberVerificationDataWalletVerified(false,false);
 		BankProperty bankProperty = bankPropertyReadPlatfomService
 				.retrieveBankPropertDescription(query.stringValueOfParameterNamed("walletNumber"));
 		if (bankProperty.getPropertyValue().equals(query.stringValueOfParameterNamed("walletNumber"))) {
-			bankWalletNumberVerificationData.setIsVerified(true);
+			bankWalletNumberVerificationData.setIsWalletVerified(true);
 		}
+		bankProperty = bankPropertyReadPlatfomService
+				.retrieveBankPropertDescription(query.stringValueOfParameterNamed("mobileNumber"));
+		if (bankProperty.getPropertyValue().equals(query.stringValueOfParameterNamed("mobileNumber"))) {
+			bankWalletNumberVerificationData.setIsMobileVerified(true);
+		}
+		
+		if(bankWalletNumberVerificationData.getIsMobileVerified() && bankWalletNumberVerificationData.getIsWalletVerified()) {
+		    String generatedString = RandomStringUtils.random(5, true, true);
+		    bankWalletNumberVerificationData.setGeneratedString(generatedString);
+		    SmsAfricaGateway sms = new SmsAfricaGateway();
+		    sms.sendMessage(" "+generatedString+" ", bankPropertyReadPlatfomService.retrieveBankPropertName("account_id").getPropertyValue(), bankPropertyReadPlatfomService.retrieveBankPropertName("api_key").getPropertyValue(), bankPropertyReadPlatfomService.retrieveBankPropertName("account_name").getPropertyValue(), bankPropertyReadPlatfomService.retrieveBankPropertName("contry_code").getPropertyValue() + bankPropertyReadPlatfomService.retrieveBankPropertName("mobile_no").getPropertyValue());
+		}
+		
 		final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper
 				.process(uriInfo.getQueryParameters());
 		return this.toApiJsonSerializer.serialize(settings, bankWalletNumberVerificationData, PARAMETERS);

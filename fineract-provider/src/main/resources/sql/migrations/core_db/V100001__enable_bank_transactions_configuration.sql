@@ -78,6 +78,16 @@ INSERT INTO `f_bank_mpesa_details` (`property_name`, `property_description`) VAL
 
 INSERT INTO `f_bank_mpesa_details` (`property_name`, `property_description`) VALUES ('transaction_URL', '/api/v1/wallet/wallets/transactions');
 
+INSERT INTO `f_bank_mpesa_details` (`property_name`, `property_description`) VALUES ('mobile_no', '735402848');
+
+INSERT INTO `f_bank_mpesa_details` (`property_name`, `property_description`) VALUES ('mobile_no', 'FxgWlbnnmaOm3dyCWkNikWtB9rtH7su8dJPttnRTjIO7tciBW37dR3U8qqa3');
+
+INSERT INTO `f_bank_mpesa_details` (`property_name`, `property_description`) VALUES ('contry_code', '+254');
+
+INSERT INTO `f_bank_mpesa_details` (`property_name`, `property_description`) VALUES ('account_id', '222200');
+
+INSERT INTO `f_bank_mpesa_details` (`property_name`, `property_description`) VALUES ('account_name', 'TIMIZACPTAL');
+
 INSERT INTO `m_permission` (`grouping`, `code`, `entity_name`, `action_name`, `can_maker_checker`) VALUES ('mpesa', 'READ_MPESA', 'MPESA', 'READ', 0);
 
 INSERT INTO `m_permission` (`grouping`, `code`, `entity_name`, `action_name`, `can_maker_checker`) VALUES ('mpesa', 'VALIDATE_MPESA', 'MPESA', 'VALIDATE', 0);
@@ -89,3 +99,7 @@ INSERT INTO `m_permission` (`grouping`, `code`, `entity_name`, `action_name`, `c
 INSERT INTO `m_permission` (`grouping`, `code`, `entity_name`, `action_name`, `can_maker_checker`) VALUES ('mpesa', 'CHECK_MPESABALANCE', 'MPESABALANCE', 'CHECK', 0);
 
 INSERT INTO `m_permission` (`grouping`, `code`, `entity_name`, `action_name`, `can_maker_checker`) VALUES ('mpesa', 'DO_MPESABANKTRANSACTION', 'MPESABANKTRANSACTION', 'DO', 0);
+
+INSERT INTO `m_permission` (`grouping`, `code`, `entity_name`, `action_name`, `can_maker_checker`) VALUES ('mpesa', 'VALIDATE_MPESA_OTP', 'MPESA_OTP', 'VALIDATE', 0);
+
+INSERT INTO `m_permission` (`grouping`, `code`, `entity_name`, `action_name`, `can_maker_checker`) VALUES ('mpesa', 'RESEND_MPESA_OTP', 'RESEND_MPESA_OTP', 'RESEND', 0);
