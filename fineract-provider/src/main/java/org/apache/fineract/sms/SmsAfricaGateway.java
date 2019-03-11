@@ -101,6 +101,7 @@ public class SmsAfricaGateway
                                             String value = String.valueOf(status_json_object.get(key));
                                             status_map.put(key, value);
                                         }
+                                        System.out.println(status_map);
                                         
                                         for(Iterator<?> iterator = message_json_object.keySet().iterator(); iterator.hasNext();) {
                                             String key = String.valueOf(iterator.next());
@@ -109,6 +110,7 @@ public class SmsAfricaGateway
                                         }
                                         
                                         if(listener != null) {
+                                        	System.out.println(status_map);
                                 listener.onSucceed(status_map, message_map);
                         }
                                 } catch (Exception e) {

@@ -80,7 +80,7 @@ INSERT INTO `f_bank_mpesa_details` (`property_name`, `property_description`) VAL
 
 INSERT INTO `f_bank_mpesa_details` (`property_name`, `property_description`) VALUES ('mobile_no', '735402848');
 
-INSERT INTO `f_bank_mpesa_details` (`property_name`, `property_description`) VALUES ('mobile_no', 'FxgWlbnnmaOm3dyCWkNikWtB9rtH7su8dJPttnRTjIO7tciBW37dR3U8qqa3');
+INSERT INTO `f_bank_mpesa_details` (`property_name`, `property_description`) VALUES ('api_key', 'FxgWlbnnmaOm3dyCWkNikWtB9rtH7su8dJPttnRTjIO7tciBW37dR3U8qqa3');
 
 INSERT INTO `f_bank_mpesa_details` (`property_name`, `property_description`) VALUES ('contry_code', '+254');
 
