@@ -32,6 +32,7 @@ import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.sms.MessageGatewayException;
 import org.apache.fineract.sms.SmsAfricaGateway;
+import org.apache.fineract.useradministration.exception.UnAuthenticatedUserException;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
@@ -102,15 +103,24 @@ public class MpesaApi {
 		final JsonElement parsedQuery = this.fromJsonHelper.parse(apiRequestBodyAsJson);
 		final JsonQuery query = JsonQuery.from(apiRequestBodyAsJson, parsedQuery, this.fromJsonHelper);
 		BankWalletNumberVerificationDataWalletVerified bankWalletNumberVerificationData = new BankWalletNumberVerificationDataWalletVerified(false,false);
-		BankProperty bankProperty = bankPropertyReadPlatfomService
+		BankProperty bankProperty = null;
+		try {
+		bankProperty = bankPropertyReadPlatfomService
 				.retrieveBankPropertDescription(query.stringValueOfParameterNamed("walletNumber"));
 		if (bankProperty.getPropertyValue().equals(query.stringValueOfParameterNamed("walletNumber"))) {
 			bankWalletNumberVerificationData.setIsWalletVerified(true);
 		}
+		}catch(Exception e) {
+			throw new DetailsIncorrectException();
+		}
+		try {
 		bankProperty = bankPropertyReadPlatfomService
 				.retrieveBankPropertDescription(query.stringValueOfParameterNamed("mobileNumber"));
 		if (bankProperty.getPropertyValue().equals(query.stringValueOfParameterNamed("mobileNumber"))) {
 			bankWalletNumberVerificationData.setIsMobileVerified(true);
+		}
+		}catch(Exception e) {
+			throw new DetailsIncorrectException();
 		}
 		
 		if(bankWalletNumberVerificationData.getIsMobileVerified() && bankWalletNumberVerificationData.getIsWalletVerified()) {
@@ -118,6 +128,8 @@ public class MpesaApi {
 		    bankWalletNumberVerificationData.setGeneratedString(generatedString);
 		    SmsAfricaGateway sms = new SmsAfricaGateway();
 		    sms.sendMessage(" "+generatedString+" ", bankPropertyReadPlatfomService.retrieveBankPropertName("account_id").getPropertyValue(), bankPropertyReadPlatfomService.retrieveBankPropertName("api_key").getPropertyValue(), bankPropertyReadPlatfomService.retrieveBankPropertName("account_name").getPropertyValue(), bankPropertyReadPlatfomService.retrieveBankPropertName("contry_code").getPropertyValue() + bankPropertyReadPlatfomService.retrieveBankPropertName("mobile_no").getPropertyValue());
+		}else {
+			throw new DetailsIncorrectException();
 		}
 		
 		final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper
