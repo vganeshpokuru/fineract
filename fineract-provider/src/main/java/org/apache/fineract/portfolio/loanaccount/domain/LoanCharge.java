@@ -293,6 +293,22 @@ public class LoanCharge extends AbstractPersistableCustom<Long> {
                 this.amountWaived = null;
                 this.amountWrittenOff = null;
             break;
+            case FLAT_AMOUNT_LOAN:
+                this.percentage = null;
+                this.amountPercentageAppliedTo = null;
+                this.amountPaid = null;
+                if (isInstalmentFee()) {
+                    if (numberOfRepayments == null) {
+                        numberOfRepayments = this.loan.fetchNumberOfInstallmensAfterExceptions();
+                    }
+                    this.amount = new BigDecimal(chargeAmount.doubleValue()/numberOfRepayments);
+                } else {
+                    this.amount = chargeAmount;
+                }
+                this.amountOutstanding = chargeAmount;
+                this.amountWaived = null;
+                this.amountWrittenOff = null;
+            break;
             case PERCENT_OF_AMOUNT:
             case PERCENT_OF_AMOUNT_AND_INTEREST:
             case PERCENT_OF_INTEREST:
@@ -401,6 +417,16 @@ public class LoanCharge extends AbstractPersistableCustom<Long> {
                         this.amount = amount;
                     }
                 break;
+                case FLAT_AMOUNT_LOAN:
+                    if (isInstalmentFee()) {
+                        if (numberOfRepayments == null) {
+                            numberOfRepayments = this.loan.fetchNumberOfInstallmensAfterExceptions();
+                        }
+                        this.amount = new BigDecimal(amount.doubleValue()/numberOfRepayments);
+                    } else {
+                        this.amount = amount;
+                    }
+                    break;
                 case PERCENT_OF_AMOUNT:
                 case PERCENT_OF_AMOUNT_AND_INTEREST:
                 case PERCENT_OF_INTEREST:
@@ -487,6 +513,14 @@ public class LoanCharge extends AbstractPersistableCustom<Long> {
                 case FLAT:
                     if (isInstalmentFee()) {
                         this.amount = newValue.multiply(BigDecimal.valueOf(this.loan.fetchNumberOfInstallmensAfterExceptions()));
+                    } else {
+                        this.amount = newValue;
+                    }
+                    this.amountOutstanding = calculateOutstanding();
+                break;
+                case FLAT_AMOUNT_LOAN:
+                    if (isInstalmentFee()) {
+                        this.amount = new BigDecimal(newValue.doubleValue()/this.loan.fetchNumberOfInstallmensAfterExceptions());
                     } else {
                         this.amount = newValue;
                     }
@@ -862,6 +896,14 @@ public class LoanCharge extends AbstractPersistableCustom<Long> {
             if (periodDueDate.isEqual(loanChargePerInstallment.getRepaymentInstallment().getDueDate())) { return loanChargePerInstallment; }
         }
         return null;
+    }
+    
+    public BigDecimal getTotalInstallmentLoanCharge() {
+        BigDecimal totalInstallmentCharge = BigDecimal.ZERO;
+        for (final LoanInstallmentCharge loanChargePerInstallment : this.loanInstallmentCharge) {
+            totalInstallmentCharge = totalInstallmentCharge.add(loanChargePerInstallment.getAmount());
+        }
+        return totalInstallmentCharge;
     }
 
     public LoanInstallmentCharge getInstallmentLoanCharge(final Integer installmentNumber) {

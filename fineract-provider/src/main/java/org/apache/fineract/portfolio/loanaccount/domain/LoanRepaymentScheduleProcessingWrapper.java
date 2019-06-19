@@ -87,6 +87,8 @@ public class LoanRepaymentScheduleProcessingWrapper {
                         }
                         BigDecimal loanChargeAmt = amount.multiply(loanCharge.getPercentage()).divide(BigDecimal.valueOf(100));
                         cumulative = cumulative.plus(loanChargeAmt);
+                    } else if(loanCharge.getChargeCalculation().isFlatAmountLoan()) {
+                        cumulative = cumulative.plus(loanCharge.getInstallmentLoanCharge(period.getInstallmentNumber()).getAmount());
                     } else {
                         cumulative = cumulative.plus(loanCharge.amountOrPercentage());
                     }

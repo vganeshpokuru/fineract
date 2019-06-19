@@ -25,7 +25,8 @@ public enum ChargeCalculationType {
     PERCENT_OF_AMOUNT(2, "chargeCalculationType.percent.of.amount"), //
     PERCENT_OF_AMOUNT_AND_INTEREST(3, "chargeCalculationType.percent.of.amount.and.interest"), //
     PERCENT_OF_INTEREST(4, "chargeCalculationType.percent.of.interest"),
-    PERCENT_OF_DISBURSEMENT_AMOUNT(5,"chargeCalculationType.percent.of.disbursement.amount");
+    PERCENT_OF_DISBURSEMENT_AMOUNT(5,"chargeCalculationType.percent.of.disbursement.amount"),
+    FLAT_AMOUNT_LOAN(6,"chargeCalculationType.flat.of.amount.loan");
 
     private final Integer value;
     private final String code;
@@ -46,7 +47,7 @@ public enum ChargeCalculationType {
     public static Object[] validValuesForLoan() {
         return new Integer[] { ChargeCalculationType.FLAT.getValue(), ChargeCalculationType.PERCENT_OF_AMOUNT.getValue(),
                 ChargeCalculationType.PERCENT_OF_AMOUNT_AND_INTEREST.getValue(), ChargeCalculationType.PERCENT_OF_INTEREST.getValue(),
-                ChargeCalculationType.PERCENT_OF_DISBURSEMENT_AMOUNT.getValue()};
+                ChargeCalculationType.PERCENT_OF_DISBURSEMENT_AMOUNT.getValue(), ChargeCalculationType.FLAT_AMOUNT_LOAN.getValue()};
     }
 
     public static Object[] validValuesForSavings() {
@@ -85,7 +86,10 @@ public enum ChargeCalculationType {
                 chargeCalculationType = PERCENT_OF_INTEREST;
             break;
             case 5:
-            	chargeCalculationType = PERCENT_OF_DISBURSEMENT_AMOUNT;
+                chargeCalculationType = PERCENT_OF_DISBURSEMENT_AMOUNT;
+            break;
+            case 6:
+                chargeCalculationType = FLAT_AMOUNT_LOAN;
             break;
         }
         return chargeCalculationType;
@@ -105,6 +109,10 @@ public enum ChargeCalculationType {
 
     public boolean isFlat() {
         return this.value.equals(ChargeCalculationType.FLAT.getValue());
+    }
+    
+    public boolean isFlatAmountLoan() {
+        return this.value.equals(ChargeCalculationType.FLAT_AMOUNT_LOAN.getValue());
     }
 
     public boolean isAllowedSavingsChargeCalculationType() {

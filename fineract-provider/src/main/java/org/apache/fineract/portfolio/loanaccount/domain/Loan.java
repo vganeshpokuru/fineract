@@ -4737,6 +4737,7 @@ public class Loan extends AbstractPersistableCustom<Long> {
         if (this.charges != null) {
             for (LoanCharge charge : this.charges) {
                 if (charge.isActive()) {
+                    charge.update(this);
                     loanCharges.add(charge);
                 }
             }
@@ -4755,6 +4756,8 @@ public class Loan extends AbstractPersistableCustom<Long> {
     }
 
     public List<LoanInstallmentCharge> generateInstallmentLoanCharges(final LoanCharge loanCharge) {
+        BigDecimal loanChargeLeft = loanCharge.amountOrPercentage();
+        BigDecimal loanChargeCompleted = BigDecimal.ZERO;
         final List<LoanInstallmentCharge> loanChargePerInstallments = new ArrayList<>();
         if (loanCharge.isInstalmentFee()) {
             List<LoanRepaymentScheduleInstallment> installments = getRepaymentScheduleInstallments() ;
@@ -4765,12 +4768,19 @@ public class Loan extends AbstractPersistableCustom<Long> {
                 BigDecimal amount = BigDecimal.ZERO;
                 if (loanCharge.getChargeCalculation().isFlat()) {
                     amount = loanCharge.amountOrPercentage();
+                } else if(loanCharge.getChargeCalculation().isFlatAmountLoan()) {
+                    amount = Money.of(getCurrency(), new BigDecimal(loanCharge.amountOrPercentage().doubleValue()/installments.size())).getAmount();
+                    loanChargeLeft = loanChargeLeft.subtract(amount);
+                    if(installment.getInstallmentNumber() == installments.size()) {
+                     amount = loanCharge.amountOrPercentage().subtract(loanChargeCompleted);
+                    }
                 } else {
                     amount = calculateInstallmentChargeAmount(loanCharge.getChargeCalculation(), loanCharge.getPercentage(), installment)
                             .getAmount();
                 }
                 final LoanInstallmentCharge loanInstallmentCharge = new LoanInstallmentCharge(amount, loanCharge, installment);
                 loanChargePerInstallments.add(loanInstallmentCharge);
+                loanChargeCompleted = loanChargeCompleted.add(amount);
             }
         }
         return loanChargePerInstallments;

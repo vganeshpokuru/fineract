@@ -79,7 +79,11 @@ public class LoanInstallmentCharge extends AbstractPersistableCustom<Long> imple
         this.loancharge = loanCharge;
         this.installment = installment;
         this.amount = amount;
+        if(loanCharge.getChargeCalculation().isFlatAmountLoan()) {
+         this.amountOutstanding = loanCharge.amountOrPercentage();
+        }else {
         this.amountOutstanding = amount;
+        }
         this.amountPaid = null;
         this.amountWaived = null;
         this.amountWrittenOff = null;
