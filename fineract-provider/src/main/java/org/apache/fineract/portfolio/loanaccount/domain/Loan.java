@@ -587,7 +587,12 @@ public class Loan extends AbstractPersistableCustom<Long> {
         if (loanCharge.getChargeCalculation().isPercentageBased()) {
             chargeAmt = loanCharge.getPercentage();
             if (loanCharge.isInstalmentFee()) {
-                totalChargeAmt = calculatePerInstallmentChargeAmount(loanCharge);
+                if (!loanCharge.getChargeCalculation().isFlatAmountLoan()) {
+                    totalChargeAmt = calculatePerInstallmentChargeAmount(loanCharge);
+                } else {
+                    totalChargeAmt = loanCharge.amountOrPercentage();
+                    generateInstallmentLoanCharges(loanCharge);
+                }
             } else if (loanCharge.isOverdueInstallmentCharge()) {
                 totalChargeAmt = loanCharge.amountOutstanding();
             }
@@ -917,13 +922,15 @@ public class Loan extends AbstractPersistableCustom<Long> {
         return this.loanSummaryWrapper.calculateTotalInterestCharged(getRepaymentScheduleInstallments(), getCurrency()).getAmount();
     }
 
+    
     private BigDecimal calculatePerInstallmentChargeAmount(final LoanCharge loanCharge) {
         return calculatePerInstallmentChargeAmount(loanCharge.getChargeCalculation(), loanCharge.getPercentage());
     }
 
+
     public BigDecimal calculatePerInstallmentChargeAmount(final ChargeCalculationType calculationType, final BigDecimal percentage) {
         Money amount = Money.zero(getCurrency());
-        List<LoanRepaymentScheduleInstallment> installments = getRepaymentScheduleInstallments() ;
+        List<LoanRepaymentScheduleInstallment> installments = getRepaymentScheduleInstallments();
         for (final LoanRepaymentScheduleInstallment installment : installments) {
             amount = amount.plus(calculateInstallmentChargeAmount(calculationType, percentage, installment));
         }
@@ -1137,7 +1144,12 @@ public class Loan extends AbstractPersistableCustom<Long> {
             if (loanCharge.getChargeCalculation().isPercentageBased()) {
                 chargeAmt = loanCharge.getPercentage();
                 if (loanCharge.isInstalmentFee()) {
-                    totalChargeAmt = calculatePerInstallmentChargeAmount(loanCharge);
+                    if (!loanCharge.getChargeCalculation().isFlatAmountLoan()) {
+                        totalChargeAmt = calculatePerInstallmentChargeAmount(loanCharge);
+                    } else {
+                        totalChargeAmt = loanCharge.amountOrPercentage();
+                        generateInstallmentLoanCharges(loanCharge);
+                    }
                 }
             } else {
                 chargeAmt = loanCharge.amountOrPercentage();
@@ -1625,7 +1637,12 @@ public class Loan extends AbstractPersistableCustom<Long> {
             }
             chargeAmt = loanCharge.getPercentage();
             if (loanCharge.isInstalmentFee()) {
-                totalChargeAmt = calculatePerInstallmentChargeAmount(loanCharge);
+                if (!loanCharge.getChargeCalculation().isFlatAmountLoan()) {
+                    totalChargeAmt = calculatePerInstallmentChargeAmount(loanCharge);
+                } else {
+                    totalChargeAmt = loanCharge.amountOrPercentage();
+                    generateInstallmentLoanCharges(loanCharge);
+                }
             }
         } else {
             chargeAmt = loanCharge.amountOrPercentage();
@@ -5283,7 +5300,7 @@ public class Loan extends AbstractPersistableCustom<Long> {
                     fee = fee.add(loanCharge.amount());
                     loanCharges.add(loanCharge);
                 }
-            } else if (loanCharge.isInstalmentFee()) {
+            } else if (loanCharge.isPenaltyCharge() && loanCharge.isInstalmentFee()) {
                 for (LoanInstallmentCharge installmentCharge : loanCharge.installmentCharges()) {
                     if (installments.contains(installmentCharge.getRepaymentInstallment().getInstallmentNumber())) {
                         fee = fee.add(installmentCharge.getAmount());

@@ -178,7 +178,8 @@ public class LoanCharge extends AbstractPersistableCustom<Long> {
         }
 
         BigDecimal loanCharge = BigDecimal.ZERO;
-        if (ChargeTimeType.fromInt(chargeDefinition.getChargeTimeType()).equals(ChargeTimeType.INSTALMENT_FEE)) {
+        if (ChargeTimeType.fromInt(chargeDefinition.getChargeTimeType()).equals(ChargeTimeType.INSTALMENT_FEE)
+                && !ChargeCalculationType.fromInt(chargeDefinition.getChargeCalculation()).equals(ChargeCalculationType.FLAT_AMOUNT_LOAN)) {
             BigDecimal percentage = amount;
             if (percentage == null) {
                 percentage = chargeDefinition.getAmount();
@@ -552,7 +553,7 @@ public class LoanCharge extends AbstractPersistableCustom<Long> {
         return actualChanges;
     }
 
-    private void updateInstallmentCharges() {
+    public void updateInstallmentCharges() {
         final Collection<LoanInstallmentCharge> remove = new HashSet<>();
         final List<LoanInstallmentCharge> newChargeInstallments = this.loan.generateInstallmentLoanCharges(this);
         if (this.loanInstallmentCharge.isEmpty()) {
@@ -645,8 +646,12 @@ public class LoanCharge extends AbstractPersistableCustom<Long> {
         }
 
         final BigDecimal totalAccountedFor = amountPaidLocal.add(amountWaivedLocal).add(amountWrittenOffLocal);
-
+        
+        if(!this.getChargeCalculation().isFlatAmountLoan()) {
         return this.amount.subtract(totalAccountedFor);
+        }else {
+            return this.amountOutstanding.subtract(totalAccountedFor);
+        }
     }
 
     public BigDecimal percentageOf(final BigDecimal value) {

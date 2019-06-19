@@ -1372,6 +1372,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             loan.addTrancheLoanCharge(chargeDefinition);
         } else {
             loanCharge = LoanCharge.createNewFromJson(loan, chargeDefinition, command);
+            loanCharge.updateInstallmentCharges();
             this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_ADD_CHARGE,
                     constructEntityMap(BUSINESS_ENTITY.LOAN_CHARGE, loanCharge));
 
