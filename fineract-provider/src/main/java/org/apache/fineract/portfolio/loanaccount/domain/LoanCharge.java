@@ -152,6 +152,14 @@ public class LoanCharge extends AbstractPersistableCustom<Long> {
         BigDecimal amountPercentageAppliedTo = BigDecimal.ZERO;
         switch (ChargeCalculationType.fromInt(chargeDefinition.getChargeCalculation())) {
             case PERCENT_OF_AMOUNT:
+            case FLAT_PERCENT_OF_AMOUNT:
+                if (command.hasParameter("principal")) {
+                    amountPercentageAppliedTo = command.bigDecimalValueOfParameterNamed("principal");
+                } else {
+                    amountPercentageAppliedTo = loan.getPrincpal().getAmount();
+                }
+            break;
+            case FLAT_AMOUNT_LOAN:
                 if (command.hasParameter("principal")) {
                     amountPercentageAppliedTo = command.bigDecimalValueOfParameterNamed("principal");
                 } else {
@@ -302,7 +310,7 @@ public class LoanCharge extends AbstractPersistableCustom<Long> {
                     if (numberOfRepayments == null) {
                         numberOfRepayments = this.loan.fetchNumberOfInstallmensAfterExceptions();
                     }
-                    this.amount = new BigDecimal(chargeAmount.doubleValue()/numberOfRepayments);
+                    this.amount = new BigDecimal(chargeAmount.doubleValue() / numberOfRepayments);
                 } else {
                     this.amount = chargeAmount;
                 }
@@ -314,6 +322,7 @@ public class LoanCharge extends AbstractPersistableCustom<Long> {
             case PERCENT_OF_AMOUNT_AND_INTEREST:
             case PERCENT_OF_INTEREST:
             case PERCENT_OF_DISBURSEMENT_AMOUNT:
+            case FLAT_PERCENT_OF_AMOUNT:
                 this.percentage = chargeAmount;
                 this.amountPercentageAppliedTo = amountPercentageAppliedTo;
                 if (loanCharge.compareTo(BigDecimal.ZERO) == 0) {
@@ -423,15 +432,16 @@ public class LoanCharge extends AbstractPersistableCustom<Long> {
                         if (numberOfRepayments == null) {
                             numberOfRepayments = this.loan.fetchNumberOfInstallmensAfterExceptions();
                         }
-                        this.amount = new BigDecimal(amount.doubleValue()/numberOfRepayments);
+                        this.amount = new BigDecimal(amount.doubleValue() / numberOfRepayments);
                     } else {
                         this.amount = amount;
                     }
-                    break;
+                break;
                 case PERCENT_OF_AMOUNT:
                 case PERCENT_OF_AMOUNT_AND_INTEREST:
                 case PERCENT_OF_INTEREST:
                 case PERCENT_OF_DISBURSEMENT_AMOUNT:
+                case FLAT_PERCENT_OF_AMOUNT:
                     this.percentage = amount;
                     this.amountPercentageAppliedTo = loanPrincipal;
                     if (loanCharge.compareTo(BigDecimal.ZERO) == 0) {
@@ -453,6 +463,7 @@ public class LoanCharge extends AbstractPersistableCustom<Long> {
         if (this.loan != null) {
             switch (ChargeCalculationType.fromInt(this.chargeCalculation)) {
                 case PERCENT_OF_AMOUNT:
+                case FLAT_PERCENT_OF_AMOUNT:
                     // If charge type is specified due date and loan is multi
                     // disburment loan.
                     // Then we need to get as of this loan charge due date how
@@ -531,6 +542,7 @@ public class LoanCharge extends AbstractPersistableCustom<Long> {
                 case PERCENT_OF_AMOUNT_AND_INTEREST:
                 case PERCENT_OF_INTEREST:
                 case PERCENT_OF_DISBURSEMENT_AMOUNT:
+                case FLAT_PERCENT_OF_AMOUNT:
                     this.percentage = newValue;
                     this.amountPercentageAppliedTo = amount;
                     loanCharge = BigDecimal.ZERO;

@@ -78,15 +78,19 @@ public class LoanRepaymentScheduleProcessingWrapper {
                     if (loanCharge.getChargeCalculation().isPercentageBased()) {
                         BigDecimal amount = BigDecimal.ZERO;
                         if (loanCharge.getChargeCalculation().isPercentageOfAmountAndInterest()) {
-                            amount = amount.add(period.getPrincipal(monetaryCurrency).getAmount()).add(
-                                    period.getInterestCharged(monetaryCurrency).getAmount());
+                            amount = amount.add(period.getPrincipal(monetaryCurrency).getAmount())
+                                    .add(period.getInterestCharged(monetaryCurrency).getAmount());
                         } else if (loanCharge.getChargeCalculation().isPercentageOfInterest()) {
                             amount = amount.add(period.getInterestCharged(monetaryCurrency).getAmount());
+                        } else if (loanCharge.getChargeCalculation().isFlatPercentageOfAmount()) {
+                            cumulative = cumulative.plus(loanCharge.getInstallmentLoanCharge(period.getInstallmentNumber()).getAmount());
                         } else {
                             amount = amount.add(period.getPrincipal(monetaryCurrency).getAmount());
                         }
-                        BigDecimal loanChargeAmt = amount.multiply(loanCharge.getPercentage()).divide(BigDecimal.valueOf(100));
-                        cumulative = cumulative.plus(loanChargeAmt);
+                        if (!loanCharge.getChargeCalculation().isFlatPercentageOfAmount()) {
+                            BigDecimal loanChargeAmt = amount.multiply(loanCharge.getPercentage()).divide(BigDecimal.valueOf(100));
+                            cumulative = cumulative.plus(loanChargeAmt);
+                        }
                     } else if(loanCharge.getChargeCalculation().isFlatAmountLoan()) {
                         cumulative = cumulative.plus(loanCharge.getInstallmentLoanCharge(period.getInstallmentNumber()).getAmount());
                     } else {
@@ -187,11 +191,15 @@ public class LoanRepaymentScheduleProcessingWrapper {
                                     .add(period.getInterestCharged(currency).getAmount());
                         } else if (loanCharge.getChargeCalculation().isPercentageOfInterest()) {
                             amount = amount.add(period.getInterestCharged(currency).getAmount());
+                        } else if (loanCharge.getChargeCalculation().isFlatPercentageOfAmount()) {
+                            cumulative = cumulative.plus(loanCharge.getInstallmentLoanCharge(period.getInstallmentNumber()).getAmount());
                         } else {
                             amount = amount.add(period.getPrincipal(currency).getAmount());
                         }
+                        if(!loanCharge.getChargeCalculation().isFlatPercentageOfAmount()) {
                         BigDecimal loanChargeAmt = amount.multiply(loanCharge.getPercentage()).divide(BigDecimal.valueOf(100));
                         cumulative = cumulative.plus(loanChargeAmt);
+                        }
                     } else if (loanCharge.getChargeCalculation().isFlatAmountLoan()) {
                         cumulative = cumulative.plus(loanCharge.getInstallmentLoanCharge(period.getInstallmentNumber()).getAmount());
                     } else {

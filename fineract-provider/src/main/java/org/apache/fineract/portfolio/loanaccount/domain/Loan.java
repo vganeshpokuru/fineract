@@ -864,13 +864,14 @@ public class Loan extends AbstractPersistableCustom<Long> {
         if (loanCharge.isOverdueInstallmentCharge()) { return loanCharge.getAmountPercentageAppliedTo(); }
         switch (loanCharge.getChargeCalculation()) {
             case PERCENT_OF_AMOUNT:
+            case FLAT_PERCENT_OF_AMOUNT:
                 amount = getDerivedAmountForCharge(loanCharge);
             break;
             case PERCENT_OF_AMOUNT_AND_INTEREST:
                 final BigDecimal totalInterestCharged = getTotalInterest();
                 if (isMultiDisburmentLoan() && loanCharge.isDisbursementCharge()) {
                     amount = getTotalAllTrancheDisbursementAmount().getAmount().add(totalInterestCharged);
-                }else{
+                } else {
                     amount = getPrincpal().getAmount().add(totalInterestCharged);
                 }
             break;
@@ -955,6 +956,9 @@ public class Loan extends AbstractPersistableCustom<Long> {
             case PERCENT_OF_AMOUNT:
                 percentOf = installment.getPrincipal(getCurrency());
             break;
+            case FLAT_PERCENT_OF_AMOUNT:
+                percentOf = Money.of(getCurrency(), this.approvedPrincipal);
+            break;
             case PERCENT_OF_AMOUNT_AND_INTEREST:
                 percentOf = installment.getPrincipal(getCurrency()).plus(installment.getInterestCharged(getCurrency()));
             break;
@@ -965,6 +969,10 @@ public class Loan extends AbstractPersistableCustom<Long> {
             break;
         }
         amount = amount.plus(LoanCharge.percentageOf(percentOf.getAmount(), percentage));
+        if (calculationType.equals(ChargeCalculationType.FLAT_PERCENT_OF_AMOUNT)) {
+            amount = Money.of(getCurrency(),
+                    new BigDecimal(amount.getAmount().doubleValue() / this.repaymentScheduleDetail().getNumberOfRepayments()));
+        }
         return amount;
     }
 

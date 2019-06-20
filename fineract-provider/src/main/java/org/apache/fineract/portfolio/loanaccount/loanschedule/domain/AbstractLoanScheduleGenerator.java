@@ -2010,7 +2010,18 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                 amount = amount.add(principalInterestForThisPeriod.principal().getAmount());
             }
             BigDecimal loanChargeAmt = amount.multiply(loanCharge.getPercentage()).divide(BigDecimal.valueOf(100));
+            if(loanCharge.getChargeCalculation().isFlatPercentageOfAmount() && numberOfRepayments > 0) {
+                loanChargeAmt = loanCharge.getAmountPercentageAppliedTo().multiply(loanCharge.getPercentage()).divide(BigDecimal.valueOf(100));
+                if(!isLastInstallment) {
+                cumulative = cumulative.plus(Money.of(cumulative.getCurrency(), new BigDecimal(loanChargeAmt.doubleValue()/numberOfRepayments)));
+                }else {
+                    cumulative = cumulative.plus(Money.of(cumulative.getCurrency(), new BigDecimal(loanChargeAmt.doubleValue()/numberOfRepayments)));
+                    cumulative = cumulative.plus(loanChargeAmt.subtract((Money.of(cumulative.getCurrency(), new BigDecimal(loanChargeAmt.doubleValue()/numberOfRepayments)).multipliedBy(new BigDecimal(numberOfRepayments))).getAmount()));
+                }
+            }
+            if(!loanCharge.getChargeCalculation().isFlatPercentageOfAmount()) {
             cumulative = cumulative.plus(loanChargeAmt);
+            }
         } else if(loanCharge.getChargeCalculation().isFlatAmountLoan() && numberOfRepayments > 0) {
             if(!isLastInstallment) {
             cumulative = cumulative.plus(Money.of(cumulative.getCurrency(), new BigDecimal(loanCharge.amountOrPercentage().doubleValue()/numberOfRepayments)));

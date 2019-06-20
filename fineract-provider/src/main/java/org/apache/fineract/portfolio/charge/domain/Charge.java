@@ -185,9 +185,11 @@ public class Charge extends AbstractPersistableCustom<Long> {
             }
 
             if (!(ChargeTimeType.fromInt(getChargeTimeType()).isWithdrawalFee() || ChargeTimeType.fromInt(getChargeTimeType()).isSavingsNoActivityFee())
-                    && ChargeCalculationType.fromInt(getChargeCalculation()).isPercentageOfAmount()) {
+                    && (ChargeCalculationType.fromInt(getChargeCalculation()).isPercentageOfAmount()
+                            || ChargeCalculationType.fromInt(getChargeCalculation()).isFlatPercentageOfAmount())) {
                 baseDataValidator.reset().parameter("chargeCalculationType").value(this.chargeCalculation)
-                        .failWithCodeNoParameterAddedToErrorCode("savings.charge.calculation.type.percentage.allowed.only.for.withdrawal.or.NoActivity");
+                        .failWithCodeNoParameterAddedToErrorCode(
+                                "savings.charge.calculation.type.percentage.allowed.only.for.withdrawal.or.NoActivity");
             }
 
         } else if (isLoanCharge()) {
@@ -202,7 +204,7 @@ public class Charge extends AbstractPersistableCustom<Long> {
                         .failWithCodeNoParameterAddedToErrorCode("not.allowed.charge.time.for.loan");
             }
         }
-        if (isPercentageOfApprovedAmount()) {
+        if (isPercentageOfApprovedAmount() || isFlatPercentageOfApprovedAmount()) {
             this.minCap = minCap;
             this.maxCap = maxCap;
         }
@@ -294,6 +296,10 @@ public class Charge extends AbstractPersistableCustom<Long> {
 
     public boolean isPercentageOfApprovedAmount() {
         return ChargeCalculationType.fromInt(this.chargeCalculation).isPercentageOfAmount();
+    }
+    
+    public boolean isFlatPercentageOfApprovedAmount() {
+        return ChargeCalculationType.fromInt(this.chargeCalculation).isFlatPercentageOfAmount();
     }
 
     public boolean isPercentageOfDisbursementAmount() {
@@ -402,9 +408,11 @@ public class Charge extends AbstractPersistableCustom<Long> {
                 }
 
                 if (!(ChargeTimeType.fromInt(getChargeTimeType()).isWithdrawalFee() || ChargeTimeType.fromInt(getChargeTimeType()).isSavingsNoActivityFee())
-                        && ChargeCalculationType.fromInt(getChargeCalculation()).isPercentageOfAmount()) {
+                        && (ChargeCalculationType.fromInt(getChargeCalculation()).isPercentageOfAmount()
+                                || ChargeCalculationType.fromInt(getChargeCalculation()).isFlatPercentageOfAmount())) {
                     baseDataValidator.reset().parameter("chargeCalculationType").value(this.chargeCalculation)
-                            .failWithCodeNoParameterAddedToErrorCode("charge.calculation.type.percentage.allowed.only.for.withdrawal.or.noactivity");
+                            .failWithCodeNoParameterAddedToErrorCode(
+                                    "charge.calculation.type.percentage.allowed.only.for.withdrawal.or.noactivity");
                 }
             } else if (isClientCharge()) {
                 if (!isAllowedClientChargeCalculationType()) {
@@ -476,7 +484,7 @@ public class Charge extends AbstractPersistableCustom<Long> {
             this.active = newValue;
         }
         // allow min and max cap to be only added to PERCENT_OF_AMOUNT for now
-        if (isPercentageOfApprovedAmount()) {
+        if (isPercentageOfApprovedAmount() || isFlatPercentageOfApprovedAmount()) {
             final String minCapParamName = "minCap";
             if (command.isChangeInBigDecimalParameterNamed(minCapParamName, this.minCap)) {
                 final BigDecimal newValue = command.bigDecimalValueOfParameterNamed(minCapParamName);
