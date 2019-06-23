@@ -868,6 +868,7 @@ public class Loan extends AbstractPersistableCustom<Long> {
                 amount = getDerivedAmountForCharge(loanCharge);
             break;
             case PERCENT_OF_AMOUNT_AND_INTEREST:
+            case FLAT_PERCENT_OF_AMOUNT_AND_INTEREST:
                 final BigDecimal totalInterestCharged = getTotalInterest();
                 if (isMultiDisburmentLoan() && loanCharge.isDisbursementCharge()) {
                     amount = getTotalAllTrancheDisbursementAmount().getAmount().add(totalInterestCharged);
@@ -876,6 +877,7 @@ public class Loan extends AbstractPersistableCustom<Long> {
                 }
             break;
             case PERCENT_OF_INTEREST:
+            case FLAT_PERCENT_OF_INTEREST:
                 amount = getTotalInterest();
             break;
             case PERCENT_OF_DISBURSEMENT_AMOUNT:
@@ -931,9 +933,13 @@ public class Loan extends AbstractPersistableCustom<Long> {
 
     public BigDecimal calculatePerInstallmentChargeAmount(final ChargeCalculationType calculationType, final BigDecimal percentage) {
         Money amount = Money.zero(getCurrency());
+        boolean isLastInstallment = false;
         List<LoanRepaymentScheduleInstallment> installments = getRepaymentScheduleInstallments();
         for (final LoanRepaymentScheduleInstallment installment : installments) {
-            amount = amount.plus(calculateInstallmentChargeAmount(calculationType, percentage, installment));
+            if(installment.getInstallmentNumber() == installments.size()) {
+             isLastInstallment = true;   
+            }
+            amount = amount.plus(calculateInstallmentChargeAmount(calculationType, percentage, installment, isLastInstallment, installments.size()));
         }
         return amount.getAmount();
     }
@@ -949,7 +955,7 @@ public class Loan extends AbstractPersistableCustom<Long> {
      * @return
      */
     private Money calculateInstallmentChargeAmount(final ChargeCalculationType calculationType, final BigDecimal percentage,
-            final LoanRepaymentScheduleInstallment installment) {
+            final LoanRepaymentScheduleInstallment installment, final boolean isLastInstallment, final Integer numberOfRepayments) {
         Money amount = Money.zero(getCurrency());
         Money percentOf = Money.zero(getCurrency());
         switch (calculationType) {
@@ -962,10 +968,25 @@ public class Loan extends AbstractPersistableCustom<Long> {
             case PERCENT_OF_INTEREST:
                 percentOf = installment.getInterestCharged(getCurrency());
             break;
+            case FLAT_PERCENT_OF_INTEREST:
+                percentOf = Money.of(getCurrency(), this.getTotalInterest());
+            break;
             default:
             break;
         }
         amount = amount.plus(LoanCharge.percentageOf(percentOf.getAmount(), percentage));
+        if (calculationType.isFlatPercentageOfInterest()) {
+            if (!isLastInstallment) {
+                amount = (Money.of(amount.getCurrency(), new BigDecimal(amount.getAmount().doubleValue() / numberOfRepayments)));
+            } else {
+                amount = (Money.of(amount.getCurrency(), new BigDecimal(amount.getAmount().doubleValue() / numberOfRepayments)));
+                amount = amount.plus(LoanCharge.percentageOf(percentOf.getAmount(), percentage).subtract((Money
+                        .of(amount.getCurrency(),
+                                new BigDecimal(
+                                        LoanCharge.percentageOf(percentOf.getAmount(), percentage).doubleValue() / numberOfRepayments))
+                        .multipliedBy(new BigDecimal(numberOfRepayments))).getAmount()));
+            }
+        }
         return amount;
     }
 
@@ -1846,6 +1867,7 @@ public class Loan extends AbstractPersistableCustom<Long> {
             disbursementDetails.updateLoan(this);
             this.disbursementDetails.add(disbursementDetails);
             for (LoanTrancheCharge trancheCharge : trancheCharges) {
+                if(!trancheCharge.getCharge().getChargeCalculation().equals(ChargeCalculationType.FLAT_PERCENT_OF_AMOUNT.getValue())) {
                 Charge chargeDefinition = trancheCharge.getCharge();
                 final LoanCharge loanCharge = LoanCharge.createNewWithoutLoan(chargeDefinition, principal, null, null, null, new LocalDate(
                         expectedDisbursementDate), null, null);
@@ -1854,6 +1876,7 @@ public class Loan extends AbstractPersistableCustom<Long> {
                         disbursementDetails);
                 loanCharge.updateLoanTrancheDisbursementCharge(loanTrancheDisbursementCharge);
                 addLoanCharge(loanCharge);
+                }
             }
             actualChanges.put(LoanApiConstants.disbursementDataParameterName, expectedDisbursementDate + "-" + principal);
             actualChanges.put("recalculateLoanSchedule", true);
@@ -4777,28 +4800,63 @@ public class Loan extends AbstractPersistableCustom<Long> {
         BigDecimal loanChargeCompleted = BigDecimal.ZERO;
         final List<LoanInstallmentCharge> loanChargePerInstallments = new ArrayList<>();
         if (loanCharge.isInstalmentFee()) {
-            List<LoanRepaymentScheduleInstallment> installments = getRepaymentScheduleInstallments() ;
+            boolean isLastInstallment = false;
+            List<LoanRepaymentScheduleInstallment> installments = getRepaymentScheduleInstallments();
             for (final LoanRepaymentScheduleInstallment installment : installments) {
-            	if(installment.isRecalculatedInterestComponent()){
-            		continue;
-            	}
+                if (installment.isRecalculatedInterestComponent()) {
+                    continue;
+                }
                 BigDecimal amount = BigDecimal.ZERO;
                 if (loanCharge.getChargeCalculation().isFlat()) {
                     amount = loanCharge.amountOrPercentage();
-                } else if(loanCharge.getChargeCalculation().isFlatAmountLoan()) {
-                    amount = Money.of(getCurrency(), new BigDecimal(loanCharge.amountOrPercentage().doubleValue()/installments.size())).getAmount();
-                    if(installment.getInstallmentNumber() == installments.size()) {
-                     amount = loanCharge.amountOrPercentage().subtract(loanChargeCompleted);
+                } else if (loanCharge.getChargeCalculation().isFlatAmountLoan()) {
+                    amount = Money.of(getCurrency(), new BigDecimal(loanCharge.amountOrPercentage().doubleValue() / installments.size()))
+                            .getAmount();
+                    if (installment.getInstallmentNumber() == installments.size()) {
+                        amount = loanCharge.amountOrPercentage().subtract(loanChargeCompleted);
                     }
                 } else if (loanCharge.getChargeCalculation().isFlatPercentageOfAmount()) {
                     amount = LoanCharge.percentageOf(this.approvedPrincipal, loanCharge.getPercentage());
                     amount = Money.of(getCurrency(), new BigDecimal(amount.doubleValue() / installments.size())).getAmount();
-                    if(installment.getInstallmentNumber() == installments.size()) {
+                    if (installment.getInstallmentNumber() == installments.size()) {
                         amount = LoanCharge.percentageOf(this.approvedPrincipal, loanCharge.getPercentage()).subtract(loanChargeCompleted);
-                       }
-                }else {
-                    amount = calculateInstallmentChargeAmount(loanCharge.getChargeCalculation(), loanCharge.getPercentage(), installment)
-                            .getAmount();
+                    }
+                } else if (loanCharge.getChargeCalculation().isFlatPercentageOfAmountAndInterest()) {
+                    final BigDecimal totalInterestCharged = getTotalInterest();
+                    BigDecimal chargeAppliedOn = BigDecimal.ZERO;
+                    if (isMultiDisburmentLoan() && loanCharge.isDisbursementCharge()) {
+                        chargeAppliedOn = getTotalAllTrancheDisbursementAmount().getAmount().add(totalInterestCharged);
+                    } else {
+                        chargeAppliedOn = getPrincpal().getAmount().add(totalInterestCharged);
+                    }
+                    amount = LoanCharge.percentageOf(chargeAppliedOn, loanCharge.getPercentage());
+                    amount = Money.of(getCurrency(), new BigDecimal(amount.doubleValue() / installments.size())).getAmount();
+                    if (installment.getInstallmentNumber() == installments.size()) {
+                        amount = LoanCharge.percentageOf(chargeAppliedOn, loanCharge.getPercentage()).subtract(loanChargeCompleted);
+                    }
+                } else if (loanCharge.getChargeCalculation().isFlatPercentageOfInterest()) {
+                    final BigDecimal totalInterestCharged = getTotalInterest();
+                    BigDecimal totalLoanChargeAmount = LoanCharge.percentageOf(totalInterestCharged, loanCharge.getPercentage());
+                    if (!(installment.getInstallmentNumber() == installments.size())) {
+                        amount = Money.of(getCurrency(), new BigDecimal(totalLoanChargeAmount.doubleValue() / installments.size()))
+                                .getAmount();
+                    } else {
+                        amount = Money.of(getCurrency(), new BigDecimal(totalLoanChargeAmount.doubleValue() / installments.size()))
+                                .getAmount();
+                        amount = Money.of(getCurrency(), amount).plus(Money.of(getCurrency(), totalLoanChargeAmount))
+                                .minus(Money.of(getCurrency(), new BigDecimal(totalLoanChargeAmount.doubleValue() / installments.size())
+                                        .multiply(new BigDecimal(installments.size()))))
+                                .getAmount();
+                    }
+
+                    amount = LoanCharge.percentageOf(totalInterestCharged, loanCharge.getPercentage());
+                    amount = Money.of(getCurrency(), new BigDecimal(amount.doubleValue() / installments.size())).getAmount();
+                    if (installment.getInstallmentNumber() == installments.size()) {
+                        amount = LoanCharge.percentageOf(totalInterestCharged, loanCharge.getPercentage()).subtract(loanChargeCompleted);
+                    }
+                } else {
+                    amount = calculateInstallmentChargeAmount(loanCharge.getChargeCalculation(), loanCharge.getPercentage(), installment,
+                            isLastInstallment, installments.size()).getAmount();
                 }
                 final LoanInstallmentCharge loanInstallmentCharge = new LoanInstallmentCharge(amount, loanCharge, installment);
                 loanChargePerInstallments.add(loanInstallmentCharge);

@@ -165,6 +165,14 @@ public class ChargeEnumerations {
                 optionData = new EnumOptionData(ChargeCalculationType.FLAT_PERCENT_OF_AMOUNT.getValue().longValue(),
                         ChargeCalculationType.FLAT_PERCENT_OF_AMOUNT.getCode(), "Flat Percentage Amount Loan");
             break;
+            case FLAT_PERCENT_OF_AMOUNT_AND_INTEREST:
+                optionData = new EnumOptionData(ChargeCalculationType.FLAT_PERCENT_OF_AMOUNT_AND_INTEREST.getValue().longValue(),
+                        ChargeCalculationType.FLAT_PERCENT_OF_AMOUNT_AND_INTEREST.getCode(), "Flat Percentage Amount and Interest");
+            break;
+            case FLAT_PERCENT_OF_INTEREST:
+                optionData = new EnumOptionData(ChargeCalculationType.FLAT_PERCENT_OF_INTEREST.getValue().longValue(),
+                        ChargeCalculationType.FLAT_PERCENT_OF_INTEREST.getCode(), "Flat Percentage of Interest");
+            break;
             default:
                 optionData = new EnumOptionData(ChargeCalculationType.INVALID.getValue().longValue(),
                         ChargeCalculationType.INVALID.getCode(), "Invalid");

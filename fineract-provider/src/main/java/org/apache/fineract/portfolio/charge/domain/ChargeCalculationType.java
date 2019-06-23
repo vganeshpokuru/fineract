@@ -27,7 +27,9 @@ public enum ChargeCalculationType {
     PERCENT_OF_INTEREST(4, "chargeCalculationType.percent.of.interest"),
     PERCENT_OF_DISBURSEMENT_AMOUNT(5,"chargeCalculationType.percent.of.disbursement.amount"),
     FLAT_AMOUNT_LOAN(6,"chargeCalculationType.flat.of.amount.loan"),
-    FLAT_PERCENT_OF_AMOUNT(7,"chargeCalculationType.flat.percent.of.amount");
+    FLAT_PERCENT_OF_AMOUNT(7,"chargeCalculationType.flat.percent.of.amount"),
+    FLAT_PERCENT_OF_AMOUNT_AND_INTEREST(8, "chargeCalculationType.flat.percent.of.amount.and.interest"),
+    FLAT_PERCENT_OF_INTEREST(9, "chargeCalculationType.flat.percent.of.interest");
 
     private final Integer value;
     private final String code;
@@ -49,7 +51,9 @@ public enum ChargeCalculationType {
         return new Integer[] { ChargeCalculationType.FLAT.getValue(), ChargeCalculationType.PERCENT_OF_AMOUNT.getValue(),
                 ChargeCalculationType.PERCENT_OF_AMOUNT_AND_INTEREST.getValue(), ChargeCalculationType.PERCENT_OF_INTEREST.getValue(),
                 ChargeCalculationType.PERCENT_OF_DISBURSEMENT_AMOUNT.getValue(), ChargeCalculationType.FLAT_AMOUNT_LOAN.getValue(),
-                ChargeCalculationType.FLAT_PERCENT_OF_AMOUNT.getValue() };
+                ChargeCalculationType.FLAT_PERCENT_OF_AMOUNT.getValue(),
+                ChargeCalculationType.FLAT_PERCENT_OF_AMOUNT_AND_INTEREST.getValue(),
+                ChargeCalculationType.FLAT_PERCENT_OF_INTEREST.getValue() };
     }
 
     public static Object[] validValuesForSavings() {
@@ -96,6 +100,12 @@ public enum ChargeCalculationType {
             case 7:
                 chargeCalculationType = FLAT_PERCENT_OF_AMOUNT;
             break;
+            case 8:
+                chargeCalculationType = FLAT_PERCENT_OF_AMOUNT_AND_INTEREST;
+            break;
+            case 9:
+                chargeCalculationType = FLAT_PERCENT_OF_INTEREST;
+            break;
         }
         return chargeCalculationType;
     }
@@ -111,9 +121,17 @@ public enum ChargeCalculationType {
     public boolean isPercentageOfAmountAndInterest() {
         return this.value.equals(ChargeCalculationType.PERCENT_OF_AMOUNT_AND_INTEREST.getValue());
     }
+    
+    public boolean isFlatPercentageOfAmountAndInterest() {
+        return this.value.equals(ChargeCalculationType.FLAT_PERCENT_OF_AMOUNT_AND_INTEREST.getValue());
+    }
 
     public boolean isPercentageOfInterest() {
         return this.value.equals(ChargeCalculationType.PERCENT_OF_INTEREST.getValue());
+    }
+    
+    public boolean isFlatPercentageOfInterest() {
+        return this.value.equals(ChargeCalculationType.FLAT_PERCENT_OF_INTEREST.getValue());
     }
 
     public boolean isFlat() {
@@ -134,7 +152,7 @@ public enum ChargeCalculationType {
 
     public boolean isPercentageBased() {
         return isPercentageOfAmount() || isPercentageOfAmountAndInterest() || isPercentageOfInterest() || isPercentageOfDisbursementAmount()
-                || isFlatPercentageOfAmount();
+                || isFlatPercentageOfAmount() || isFlatPercentageOfAmountAndInterest() || isFlatPercentageOfInterest();
     }
     
     public boolean isPercentageOfDisbursementAmount(){

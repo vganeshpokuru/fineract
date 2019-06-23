@@ -185,8 +185,7 @@ public class Charge extends AbstractPersistableCustom<Long> {
             }
 
             if (!(ChargeTimeType.fromInt(getChargeTimeType()).isWithdrawalFee() || ChargeTimeType.fromInt(getChargeTimeType()).isSavingsNoActivityFee())
-                    && (ChargeCalculationType.fromInt(getChargeCalculation()).isPercentageOfAmount()
-                            || ChargeCalculationType.fromInt(getChargeCalculation()).isFlatPercentageOfAmount())) {
+                    && (ChargeCalculationType.fromInt(getChargeCalculation()).isPercentageOfAmount())) {
                 baseDataValidator.reset().parameter("chargeCalculationType").value(this.chargeCalculation)
                         .failWithCodeNoParameterAddedToErrorCode(
                                 "savings.charge.calculation.type.percentage.allowed.only.for.withdrawal.or.NoActivity");
@@ -408,8 +407,7 @@ public class Charge extends AbstractPersistableCustom<Long> {
                 }
 
                 if (!(ChargeTimeType.fromInt(getChargeTimeType()).isWithdrawalFee() || ChargeTimeType.fromInt(getChargeTimeType()).isSavingsNoActivityFee())
-                        && (ChargeCalculationType.fromInt(getChargeCalculation()).isPercentageOfAmount()
-                                || ChargeCalculationType.fromInt(getChargeCalculation()).isFlatPercentageOfAmount())) {
+                        && (ChargeCalculationType.fromInt(getChargeCalculation()).isPercentageOfAmount())) {
                     baseDataValidator.reset().parameter("chargeCalculationType").value(this.chargeCalculation)
                             .failWithCodeNoParameterAddedToErrorCode(
                                     "charge.calculation.type.percentage.allowed.only.for.withdrawal.or.noactivity");

@@ -1173,6 +1173,7 @@ public final class LoanApplicationCommandFromApiJsonHelper {
                     }
                 break;
                 case PERCENT_OF_AMOUNT_AND_INTEREST:
+                case FLAT_PERCENT_OF_AMOUNT_AND_INTEREST:
                     if (loanCharge.isInstalmentFee()) {
                         errorcode = "installment." + LoanApiConstants.LOAN_CHARGE_CAN_NOT_BE_ADDED_WITH_PRINCIPAL_CALCULATION_TYPE;
                     } else if (loanCharge.isSpecifiedDueDate()) {
@@ -1180,6 +1181,7 @@ public final class LoanApplicationCommandFromApiJsonHelper {
                     }
                 break;
                 case PERCENT_OF_INTEREST:
+                case FLAT_PERCENT_OF_INTEREST:
                     if (loanCharge.isSpecifiedDueDate()) {
                         errorcode = "specific." + LoanApiConstants.LOAN_CHARGE_CAN_NOT_BE_ADDED_WITH_INTEREST_CALCULATION_TYPE;
                     }

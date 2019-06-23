@@ -143,7 +143,7 @@ public class LoanChargeAssembler {
                         if (!isMultiDisbursal) {
                             final LoanCharge loanCharge = LoanCharge.createNewWithoutLoan(chargeDefinition, principal, amount, chargeTime,
                                     chargeCalculation, dueDate, chargePaymentModeEnum, numberOfRepayments);
-                            loanCharges.add(loanCharge);
+                                loanCharges.add(loanCharge);
                         } else {
                             if (topLevelJsonElement.has("disbursementData") && topLevelJsonElement.get("disbursementData").isJsonArray()) {
                                 final JsonArray disbursementArray = topLevelJsonElement.get("disbursementData").getAsJsonArray();

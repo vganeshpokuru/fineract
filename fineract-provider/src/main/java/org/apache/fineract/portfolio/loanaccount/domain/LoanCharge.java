@@ -167,6 +167,7 @@ public class LoanCharge extends AbstractPersistableCustom<Long> {
                 }
             break;
             case PERCENT_OF_AMOUNT_AND_INTEREST:
+            case FLAT_PERCENT_OF_AMOUNT_AND_INTEREST:
                 if (command.hasParameter("principal") && command.hasParameter("interest")) {
                     amountPercentageAppliedTo = command.bigDecimalValueOfParameterNamed("principal").add(
                             command.bigDecimalValueOfParameterNamed("interest"));
@@ -175,6 +176,7 @@ public class LoanCharge extends AbstractPersistableCustom<Long> {
                 }
             break;
             case PERCENT_OF_INTEREST:
+            case FLAT_PERCENT_OF_INTEREST:
                 if (command.hasParameter("interest")) {
                     amountPercentageAppliedTo = command.bigDecimalValueOfParameterNamed("interest");
                 } else {
@@ -323,6 +325,8 @@ public class LoanCharge extends AbstractPersistableCustom<Long> {
             case PERCENT_OF_INTEREST:
             case PERCENT_OF_DISBURSEMENT_AMOUNT:
             case FLAT_PERCENT_OF_AMOUNT:
+            case FLAT_PERCENT_OF_AMOUNT_AND_INTEREST:
+            case FLAT_PERCENT_OF_INTEREST:
                 this.percentage = chargeAmount;
                 this.amountPercentageAppliedTo = amountPercentageAppliedTo;
                 if (loanCharge.compareTo(BigDecimal.ZERO) == 0) {
@@ -442,6 +446,8 @@ public class LoanCharge extends AbstractPersistableCustom<Long> {
                 case PERCENT_OF_INTEREST:
                 case PERCENT_OF_DISBURSEMENT_AMOUNT:
                 case FLAT_PERCENT_OF_AMOUNT:
+                case FLAT_PERCENT_OF_AMOUNT_AND_INTEREST:
+                case FLAT_PERCENT_OF_INTEREST:
                     this.percentage = amount;
                     this.amountPercentageAppliedTo = loanPrincipal;
                     if (loanCharge.compareTo(BigDecimal.ZERO) == 0) {
@@ -479,9 +485,11 @@ public class LoanCharge extends AbstractPersistableCustom<Long> {
                     }
                 break;
                 case PERCENT_OF_AMOUNT_AND_INTEREST:
+                case FLAT_PERCENT_OF_AMOUNT_AND_INTEREST:
                     amountPercentageAppliedTo = this.loan.getPrincpal().getAmount().add(this.loan.getTotalInterest());
                 break;
                 case PERCENT_OF_INTEREST:
+                case FLAT_PERCENT_OF_INTEREST:
                     amountPercentageAppliedTo = this.loan.getTotalInterest();
                 break;
                 case PERCENT_OF_DISBURSEMENT_AMOUNT:
@@ -543,6 +551,8 @@ public class LoanCharge extends AbstractPersistableCustom<Long> {
                 case PERCENT_OF_INTEREST:
                 case PERCENT_OF_DISBURSEMENT_AMOUNT:
                 case FLAT_PERCENT_OF_AMOUNT:
+                case FLAT_PERCENT_OF_AMOUNT_AND_INTEREST:
+                case FLAT_PERCENT_OF_INTEREST:
                     this.percentage = newValue;
                     this.amountPercentageAppliedTo = amount;
                     loanCharge = BigDecimal.ZERO;
