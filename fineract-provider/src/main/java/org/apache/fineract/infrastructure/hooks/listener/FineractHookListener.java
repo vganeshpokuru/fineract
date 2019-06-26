@@ -18,6 +18,11 @@
  */
 package org.apache.fineract.infrastructure.hooks.listener;
 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.fineract.infrastructure.core.domain.FineractPlatformTenant;
 import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
 import org.apache.fineract.infrastructure.hooks.domain.Hook;
@@ -27,11 +32,14 @@ import org.apache.fineract.infrastructure.hooks.processor.HookProcessor;
 import org.apache.fineract.infrastructure.hooks.processor.HookProcessorProvider;
 import org.apache.fineract.infrastructure.hooks.service.HookReadPlatformService;
 import org.apache.fineract.infrastructure.security.service.TenantDetailsService;
+import org.apache.fineract.template.service.TemplateMergeService;
 import org.apache.fineract.useradministration.domain.AppUser;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import com.google.gson.Gson;
+import com.google.gson.JsonParser;
 
 @Service
 public class FineractHookListener implements HookListener {
@@ -39,14 +47,17 @@ public class FineractHookListener implements HookListener {
     private final HookProcessorProvider hookProcessorProvider;
     private final HookReadPlatformService hookReadPlatformService;
     private final TenantDetailsService tenantDetailsService;
+    private final TemplateMergeService templateMergeService;
 
     @Autowired
     public FineractHookListener(final HookProcessorProvider hookProcessorProvider,
             final HookReadPlatformService hookReadPlatformService,
-            final TenantDetailsService tenantDetailsService) {
+            final TenantDetailsService tenantDetailsService,
+            final TemplateMergeService templateMergeService) {
         this.hookReadPlatformService = hookReadPlatformService;
         this.hookProcessorProvider = hookProcessorProvider;
         this.tenantDetailsService = tenantDetailsService;
+        this.templateMergeService = templateMergeService;
     }
 
     @Override
@@ -63,7 +74,7 @@ public class FineractHookListener implements HookListener {
         final HookEventSource hookEventSource = event.getSource();
         final String entityName = hookEventSource.getEntityName();
         final String actionName = hookEventSource.getActionName();
-        final String payload = event.getPayload();
+        String payload = event.getPayload();
 
         final List<Hook> hooks = this.hookReadPlatformService
                 .retrieveHooksByEvent(hookEventSource.getEntityName(),
@@ -72,9 +83,33 @@ public class FineractHookListener implements HookListener {
         for (final Hook hook : hooks) {
             final HookProcessor processor = this.hookProcessorProvider
                     .getProcessor(hook);
+            if(hook.getUgdTemplate() != null) {
+            	payload = processUgdTemplate(payload, hook, authToken);
+            }
             processor.process(hook, appUser, payload, entityName, actionName,
                     tenantIdentifier, authToken);
         }
+    }
+    
+    private String processUgdTemplate(final String payload,
+            final Hook hook, final String authToken) {
+        String json = "";
+        try {
+            @SuppressWarnings("unchecked")
+            final HashMap<String, Object> map = new ObjectMapper().readValue(payload, HashMap.class);
+            map.put("BASE_URI", System.getProperty("baseUrl"));
+            if (map.containsKey("loanId") || map.containsKey("clientId")) {
+                this.templateMergeService.setAuthToken(authToken);
+                final String compiledMessage = this.templateMergeService.compile(hook.getUgdTemplate(), map).replace("<p>", "")
+                        .replace("</p>", "");
+                final Map<String, String> jsonMap = new HashMap<>();
+                jsonMap.put("payload", payload);
+                jsonMap.put("UGDtemplate", compiledMessage);
+                final String jsonString = new Gson().toJson(jsonMap);
+                json = new JsonParser().parse(jsonString).getAsJsonObject().toString();
+            }
+        } catch (IOException e) {}
+        return json;
     }
 
 }
