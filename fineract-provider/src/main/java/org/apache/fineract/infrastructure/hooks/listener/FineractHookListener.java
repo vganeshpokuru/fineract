@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.fineract.infrastructure.core.domain.FineractPlatformTenant;
+import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
 import org.apache.fineract.infrastructure.hooks.domain.Hook;
 import org.apache.fineract.infrastructure.hooks.event.HookEvent;
@@ -48,16 +49,19 @@ public class FineractHookListener implements HookListener {
     private final HookReadPlatformService hookReadPlatformService;
     private final TenantDetailsService tenantDetailsService;
     private final TemplateMergeService templateMergeService;
+    private final DefaultToApiJsonSerializer<String> apiJsonSerializerService;
 
     @Autowired
     public FineractHookListener(final HookProcessorProvider hookProcessorProvider,
             final HookReadPlatformService hookReadPlatformService,
             final TenantDetailsService tenantDetailsService,
-            final TemplateMergeService templateMergeService) {
+            final TemplateMergeService templateMergeService,
+            final DefaultToApiJsonSerializer<String> apiJsonSerializerService) {
         this.hookReadPlatformService = hookReadPlatformService;
         this.hookProcessorProvider = hookProcessorProvider;
         this.tenantDetailsService = tenantDetailsService;
         this.templateMergeService = templateMergeService;
+        this.apiJsonSerializerService = apiJsonSerializerService;
     }
 
     @Override
@@ -101,15 +105,15 @@ public class FineractHookListener implements HookListener {
             if (map.containsKey("loanId") || map.containsKey("clientId")) {
                 this.templateMergeService.setAuthToken(authToken);
                 final String compiledMessage = this.templateMergeService.compile(hook.getUgdTemplate(), map).replace("<p>", "")
-                        .replace("</p>", "");
+                        .replace("</p>", "").replace("&quot;", "\"");
                 final Map<String, String> jsonMap = new HashMap<>();
                 jsonMap.put("payload", payload);
-                jsonMap.put("UGDtemplate", compiledMessage);
+                jsonMap.put("UGDtemplate", new JsonParser().parse(compiledMessage).getAsJsonObject().toString());
                 final String jsonString = new Gson().toJson(jsonMap);
                 json = new JsonParser().parse(jsonString).getAsJsonObject().toString();
             }
         } catch (IOException e) {}
-        return json;
+        return this.apiJsonSerializerService.serialize(json).replace("\\", "").replace("\"{", "{").replace("}\"", "}");
     }
 
 }
