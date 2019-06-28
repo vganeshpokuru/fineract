@@ -21,6 +21,7 @@ package org.apache.fineract.notification.service;
 import org.apache.activemq.command.ActiveMQQueue;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
+import org.apache.fineract.infrastructure.jobs.domain.ScheduledJobDetail;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.notification.data.NotificationData;
 import org.apache.fineract.notification.data.TopicSubscriberData;
@@ -84,46 +85,34 @@ public class NotificationDomainServiceImpl implements NotificationDomainService 
 	}
 	
 	@PostConstruct
-	public void addListeners() {
-		businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.CLIENTS_CREATE,
-				new ClientCreatedListener());
-		businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.SAVINGS_APPROVE,
-				new SavingsAccountApprovedListener());
-		businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.CENTERS_CREATE,
-				new CenterCreatedListener());
-		businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.GROUPS_CREATE,
-				new GroupCreatedListener());
-		businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.SAVINGS_DEPOSIT,
-				new SavingsAccountDepositListener());
-		businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.SHARE_PRODUCT_DIVIDENDS_CREATE,
-				new ShareProductDividendCreatedListener());
-		businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.FIXED_DEPOSIT_ACCOUNT_CREATE,
-				new FixedDepositAccountCreatedListener());
-		businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.RECURRING_DEPOSIT_ACCOUNT_CREATE,
-				new RecurringDepositAccountCreatedListener());
-		businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.SAVINGS_POST_INTEREST,
-				new SavingsPostInterestListener());
-		businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_CREATE,
-				new LoanCreatedListener());
-		businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_APPROVED,
-				new LoanApprovedListener());
-		businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_CLOSE,
-				new LoanClosedListener());
-		businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_CLOSE_AS_RESCHEDULE,
-				new LoanCloseAsRescheduledListener());
-		 businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_MAKE_REPAYMENT,
-				 new LoanMakeRepaymentListener());
-		 businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_PRODUCT_CREATE,
-				 new LoanProductCreatedListener());
-		 businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.SAVINGS_CREATE,
-				 new SavingsAccountCreatedListener());
-		 businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.SAVINGS_CLOSE,
-				 new SavingsAccountClosedListener());
-		 businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.SHARE_ACCOUNT_CREATE,
-				 new ShareAccountCreatedListener());
-		 businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.SHARE_ACCOUNT_APPROVE,
-				 new ShareAccountApprovedListener());
-	}
+    public void addListeners() {
+        businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.CLIENTS_CREATE, new ClientCreatedListener());
+        businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.SAVINGS_APPROVE, new SavingsAccountApprovedListener());
+        businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.CENTERS_CREATE, new CenterCreatedListener());
+        businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.GROUPS_CREATE, new GroupCreatedListener());
+        businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.SAVINGS_DEPOSIT, new SavingsAccountDepositListener());
+        businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.SHARE_PRODUCT_DIVIDENDS_CREATE,
+                new ShareProductDividendCreatedListener());
+        businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.FIXED_DEPOSIT_ACCOUNT_CREATE,
+                new FixedDepositAccountCreatedListener());
+        businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.RECURRING_DEPOSIT_ACCOUNT_CREATE,
+                new RecurringDepositAccountCreatedListener());
+        businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.SAVINGS_POST_INTEREST, new SavingsPostInterestListener());
+        businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_CREATE, new LoanCreatedListener());
+        businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_APPROVED, new LoanApprovedListener());
+        businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_CLOSE, new LoanClosedListener());
+        businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_CLOSE_AS_RESCHEDULE,
+                new LoanCloseAsRescheduledListener());
+        businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_MAKE_REPAYMENT, new LoanMakeRepaymentListener());
+        businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_PRODUCT_CREATE, new LoanProductCreatedListener());
+        businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.SAVINGS_CREATE, new SavingsAccountCreatedListener());
+        businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.SAVINGS_CLOSE, new SavingsAccountClosedListener());
+        businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.SHARE_ACCOUNT_CREATE, new ShareAccountCreatedListener());
+        businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.SHARE_ACCOUNT_APPROVE,
+                new ShareAccountApprovedListener());
+        businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.SCHEDULAR_JOB_UPDATED, new SchedularJobUpdatedListener());
+        businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.SCHEDULAR_JOB_EXECUTED, new SchedularJobExecutedListener());
+    }
 	
 	private abstract class NotificationBusinessEventAdapter implements BusinessEventListner {
 		@Override
@@ -536,6 +525,48 @@ public class NotificationDomainServiceImpl implements NotificationDomainService 
 			}
 		}
 	}
+	
+	private class SchedularJobUpdatedListener extends NotificationBusinessEventAdapter {
+            
+            @Override
+            public void businessEventWasExecuted(Map<BUSINESS_ENTITY, Object> businessEventEntity) {
+                ScheduledJobDetail scheduledJobDetail;
+                    Object entity = businessEventEntity.get(BUSINESS_ENTITY.SCHEDULAR_JOB);
+                    if (entity != null) {
+                        scheduledJobDetail = (ScheduledJobDetail) entity;
+                            buildNotification(
+                                            "UPDATE_SCHEDULER",
+                                            "schedulerJob",
+                                            scheduledJobDetail.getId(),
+                                            "scheduler job updated",
+                                            "updated",
+                                            context.authenticatedUser().getId(),
+                                            1l
+                            );
+                    }
+            }
+    }
+	
+private class SchedularJobExecutedListener extends NotificationBusinessEventAdapter {
+            
+            @Override
+            public void businessEventWasExecuted(Map<BUSINESS_ENTITY, Object> businessEventEntity) {
+                ScheduledJobDetail scheduledJobDetail;
+                    Object entity = businessEventEntity.get(BUSINESS_ENTITY.SCHEDULAR_JOB);
+                    if (entity != null) {
+                        scheduledJobDetail = (ScheduledJobDetail) entity;
+                            buildNotification(
+                                            "EXECUTE_SCHEDULER",
+                                            "schedulerJob",
+                                            scheduledJobDetail.getId(),
+                                            "scheduler job executed",
+                                            "executed",
+                                            context.authenticatedUser().getId(),
+                                            1l
+                            );
+                    }
+            }
+    }
 	
 	private class ShareAccountApprovedListener extends NotificationBusinessEventAdapter {
 		

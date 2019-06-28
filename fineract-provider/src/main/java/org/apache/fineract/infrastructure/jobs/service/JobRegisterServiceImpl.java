@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.TimeZone;
 
@@ -37,6 +38,9 @@ import org.apache.fineract.infrastructure.jobs.domain.ScheduledJobDetail;
 import org.apache.fineract.infrastructure.jobs.domain.SchedulerDetail;
 import org.apache.fineract.infrastructure.jobs.exception.JobNotFoundException;
 import org.apache.fineract.infrastructure.security.service.TenantDetailsService;
+import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_ENTITY;
+import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
+import org.apache.fineract.portfolio.common.service.BusinessEventNotifierService;
 import org.quartz.JobDataMap;
 import org.quartz.JobDetail;
 import org.quartz.JobKey;
@@ -78,8 +82,14 @@ public class JobRegisterServiceImpl implements JobRegisterService, ApplicationLi
     private SchedulerJobListener schedulerJobListener;
     private SchedulerStopListener schedulerStopListener;
     private SchedulerTriggerListener globalSchedulerTriggerListener;
+    private BusinessEventNotifierService businessEventNotifierService;
 
     private final HashMap<String, Scheduler> schedulers = new HashMap<>(4);
+    
+    @Autowired
+    public void setBusinessEventNotifierService(BusinessEventNotifierService businessEventNotifierService) {
+        this.businessEventNotifierService = businessEventNotifierService;
+    }
 
     @Autowired
     public void setApplicationContext(ApplicationContext applicationContext) {
@@ -237,6 +247,8 @@ public class JobRegisterServiceImpl implements JobRegisterService, ApplicationLi
         final ScheduledJobDetail scheduledJobDetail = this.schedularWritePlatformService.findByJobId(jobId);
         if (scheduledJobDetail == null) { throw new JobNotFoundException(String.valueOf(jobId)); }
         executeJob(scheduledJobDetail, null);
+        this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.SCHEDULAR_JOB_EXECUTED,
+                constructEntityMap(BUSINESS_ENTITY.SCHEDULAR_JOB, scheduledJobDetail));
     }
 
     @Override
@@ -418,5 +430,11 @@ public class JobRegisterServiceImpl implements JobRegisterService, ApplicationLi
         final String[] keyParams = Key.split(SchedulerServiceConstants.JOB_KEY_SEPERATOR);
         final JobKey JobKey = new JobKey(keyParams[0], keyParams[1]);
         return JobKey;
+    }
+    
+    private Map<BUSINESS_ENTITY, Object> constructEntityMap(final BUSINESS_ENTITY entityEvent, Object entity) {
+        Map<BUSINESS_ENTITY, Object> map = new HashMap<>(1);
+        map.put(entityEvent, entity);
+        return map;
     }
 }

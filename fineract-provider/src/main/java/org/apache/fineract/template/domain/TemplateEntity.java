@@ -27,7 +27,8 @@ public enum TemplateEntity {
 
     @SerializedName("client")
     CLIENT(0, "client"), @SerializedName("loan")
-    LOAN(1, "loan");
+    LOAN(1, "loan"),
+    job(2, "job");
 
     private int id;
     private String name;

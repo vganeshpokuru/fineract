@@ -102,7 +102,6 @@ public class FineractHookListener implements HookListener {
             @SuppressWarnings("unchecked")
             final HashMap<String, Object> map = new ObjectMapper().readValue(payload, HashMap.class);
             map.put("BASE_URI", System.getProperty("baseUrl"));
-            if (map.containsKey("loanId") || map.containsKey("clientId")) {
                 this.templateMergeService.setAuthToken(authToken);
                 final String compiledMessage = this.templateMergeService.compile(hook.getUgdTemplate(), map).replace("<p>", "")
                         .replace("</p>", "").replace("&quot;", "\"");
@@ -111,7 +110,6 @@ public class FineractHookListener implements HookListener {
                 jsonMap.put("UGDtemplate", new JsonParser().parse(compiledMessage).getAsJsonObject().toString());
                 final String jsonString = new Gson().toJson(jsonMap);
                 json = new JsonParser().parse(jsonString).getAsJsonObject().toString();
-            }
         } catch (IOException e) {}
         return this.apiJsonSerializerService.serialize(json).replace("\\", "").replace("\"{", "{").replace("}\"", "}");
     }

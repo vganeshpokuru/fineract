@@ -19,6 +19,7 @@
 package org.apache.fineract.infrastructure.jobs.service;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -33,6 +34,9 @@ import org.apache.fineract.infrastructure.jobs.domain.ScheduledJobRunHistoryRepo
 import org.apache.fineract.infrastructure.jobs.domain.SchedulerDetail;
 import org.apache.fineract.infrastructure.jobs.domain.SchedulerDetailRepository;
 import org.apache.fineract.infrastructure.jobs.exception.JobNotFoundException;
+import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_ENTITY;
+import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
+import org.apache.fineract.portfolio.common.service.BusinessEventNotifierService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,15 +51,18 @@ public class SchedularWritePlatformServiceJpaRepositoryImpl implements Schedular
     private final SchedulerDetailRepository schedulerDetailRepository;
 
     private final JobDetailDataValidator dataValidator;
+    
+    private final BusinessEventNotifierService businessEventNotifierService;
 
     @Autowired
     public SchedularWritePlatformServiceJpaRepositoryImpl(final ScheduledJobDetailRepository scheduledJobDetailsRepository,
             final ScheduledJobRunHistoryRepository scheduledJobRunHistoryRepository, final JobDetailDataValidator dataValidator,
-            final SchedulerDetailRepository schedulerDetailRepository) {
+            final SchedulerDetailRepository schedulerDetailRepository, final BusinessEventNotifierService businessEventNotifierService) {
         this.scheduledJobDetailsRepository = scheduledJobDetailsRepository;
         this.scheduledJobRunHistoryRepository = scheduledJobRunHistoryRepository;
         this.schedulerDetailRepository = schedulerDetailRepository;
         this.dataValidator = dataValidator;
+        this.businessEventNotifierService = businessEventNotifierService;
     }
 
     @Override
@@ -122,6 +129,8 @@ public class SchedularWritePlatformServiceJpaRepositoryImpl implements Schedular
         if (!changes.isEmpty()) {
             this.scheduledJobDetailsRepository.saveAndFlush(scheduledJobDetail);
         }
+        this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.SCHEDULAR_JOB_UPDATED,
+                constructEntityMap(BUSINESS_ENTITY.SCHEDULAR_JOB, scheduledJobDetail));
         return new CommandProcessingResultBuilder() //
                 .withCommandId(command.commandId()) //
                 .withEntityId(jobId) //
@@ -148,6 +157,12 @@ public class SchedularWritePlatformServiceJpaRepositoryImpl implements Schedular
         }
         this.scheduledJobDetailsRepository.save(scheduledJobDetail);
         return isStopExecution;
+    }
+    
+    private Map<BUSINESS_ENTITY, Object> constructEntityMap(final BUSINESS_ENTITY entityEvent, Object entity) {
+        Map<BUSINESS_ENTITY, Object> map = new HashMap<>(1);
+        map.put(entityEvent, entity);
+        return map;
     }
 
 }
